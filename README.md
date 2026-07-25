@@ -1,4 +1,4 @@
-# 🚀 Stack Plus Studio - Core Engine V1.0
+# 🚀 Budi Cahyono - Core Engine V1.0
 
 Boilerplate Fullstack Web Development kelas produksi yang dirancang khusus untuk mempercepat inisiasi proyek klien. Dibangun dengan arsitektur Monorepo (Turborepo), memisahkan Frontend (Next.js) dan Backend (NestJS) dalam satu *repository* yang terintegrasi, aman, dan siap *deploy*.
 
