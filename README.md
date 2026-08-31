@@ -1,30 +1,45 @@
-# 🚀 Budi Cahyono - Core Engine V1.0
+# CayLabs - Core Engine 
 
-Boilerplate Fullstack Web Development kelas produksi yang dirancang khusus untuk mempercepat inisiasi proyek klien. Dibangun dengan arsitektur Monorepo (Turborepo), memisahkan Frontend (Next.js) dan Backend (NestJS) dalam satu *repository* yang terintegrasi, aman, dan siap *deploy*.
+**CayLabs (Cahyo Lab)** adalah *personal engineering laboratory* milik **Budi Cahyono**, yang digunakan sebagai fondasi utama untuk membangun dan mengembangkan berbagai proyek software.
+
+Core Engine ini dibuat untuk menghindari setup proyek berulang. Setiap proyek baru dapat dimulai dari fondasi yang sudah memiliki struktur, dependency, konfigurasi, authentication, database integration, dan development workflow yang terstandarisasi.
+
+> **Clone → Configure → Build**
 
 ---
 
-## 🛠️ Tech Stack Utama
+## Tech Stack
 
-**Arsitektur & Tooling**
+### Architecture & Tooling
+
 - **Monorepo:** Turborepo
 - **Package Manager:** pnpm
 
-**Frontend (`apps/web`)**
+### Frontend — `apps/web`
+
 - **Framework:** Next.js 16 (App Router)
-- **Styling:** Tailwind CSS & Shadcn UI / UI Components
-- **State & HTTP:** React Hooks, Axios (dengan Interceptor)
+- **Styling:** Tailwind CSS
+- **UI Components:** Shadcn UI
+- **State & HTTP:** React Hooks, Axios
 - **Feedback UI:** React Hot Toast
 
-**Backend (`apps/api`)**
+### Backend — `apps/api`
+
 - **Framework:** NestJS
-- **Database ORM:** Prisma
-- **Security:** JWT (JSON Web Token), bcryptjs
-- **Infrastruktur:** Dockerfile ready
+- **ORM:** Prisma
+- **Authentication:** JWT + Passport
+- **Password Security:** bcryptjs
+- **Infrastructure:** Docker
+
+### Database
+
+- **Database:** PostgreSQL
+- **ORM:** Prisma
+- **Provider:** Compatible with PostgreSQL providers such as Neon
 
 ---
 
-## 📦 Struktur Direktori
+## Struktur Direktori
 
 ```text
 .
@@ -47,110 +62,219 @@ Boilerplate Fullstack Web Development kelas produksi yang dirancang khusus untuk
 ├── packages               # Shared config (TS, ESLint, dll)
 ├── pnpm-workspace.yaml    # Definisi workspace pnpm
 └── turbo.json             # Konfigurasi pipeline Turborepo
+---
+
+## Core Philosophy
+
+CayLabs Core Engine menggunakan prinsip:
+
+```text
+Standardized Foundation
+        ↓
+Reusable Architecture
+        ↓
+Clone for New Project
+        ↓
+Configure Environment
+        ↓
+Build & Customize
 ```
+
+Tujuannya adalah menjaga konsistensi antar proyek sekaligus mengurangi waktu yang diperlukan untuk melakukan setup dari awal.
+
+Setiap proyek tetap dapat dikembangkan dan disesuaikan sesuai kebutuhan tanpa harus mengubah fondasi utama secara keseluruhan.
 
 ---
 
-## 🚦 Panduan Instalasi & Menjalankan Proyek
+## Getting Started
 
-### 1. Persiapan Identitas & Kloning
+### 1. Clone Repository
 
-Gunakan repository ini sebagai template untuk memulai proyek baru. Pastikan Anda mengonfigurasi identitas Git lokal Anda dengan email dan nama profil Stack Plus Studio agar riwayat commit tetap rapi dan profesional untuk pengerjaan proyek klien.
+Clone repository ini sebagai fondasi proyek baru.
 
 ```bash
-# Konfigurasi identitas repositori (dijalankan di dalam folder proyek)
-git config user.name "Stack Plus Studio"
-git config user.email "admin@stackplus.studio"
+git clone <repository-url>
+cd <project-name>
 ```
 
-### 2. Instalasi Dependensi
+### 2. Install Dependencies
 
-Pastikan Anda menggunakan pnpm. Jalankan perintah ini di direktori root:
+Pastikan **Node.js** dan **pnpm** sudah tersedia.
 
 ```bash
 pnpm install
 ```
 
-### 3. Konfigurasi Environment Variables (.env)
+### 3. Configure Environment
 
-Anda perlu mengatur variabel lingkungan untuk Backend dan Frontend.
+Buat environment variables sesuai kebutuhan project.
 
-**Backend (`apps/api/.env`):**
+#### Backend — `apps/api/.env`
 
 ```env
-# Contoh menggunakan PostgreSQL atau MySQL
-DATABASE_URL="postgresql://user:password@localhost:5432/namadatabase?schema=public"
-JWT_SECRET="rahasia_super_kuat_stackplus_123!"
+DATABASE_URL="your-database-url"
+JWT_SECRET="your-secure-secret"
 ```
 
-**Frontend (`apps/web/.env.local`):**
+#### Frontend — `apps/web/.env.local`
 
 ```env
 NEXT_PUBLIC_API_URL="http://localhost:3001"
 ```
 
-### 4. Setup Database (Prisma)
+> Jangan commit file `.env` atau `.env.local` ke repository public.
 
-Jalankan migrasi untuk men-sinkronkan skema Prisma dengan database Anda:
+### 4. Setup Prisma
 
 ```bash
-# Masuk ke direktori API atau gunakan filter pnpm
 pnpm --filter ./apps/api prisma generate
 pnpm --filter ./apps/api prisma db push
 ```
 
-### 5. Menjalankan Development Server
+### 5. Run Development
 
-Jalankan Frontend dan Backend secara bersamaan dari root direktori menggunakan Turborepo:
+Jalankan seluruh workspace dari root:
 
 ```bash
 pnpm dev
 ```
 
-- **Frontend (Next.js):** http://localhost:3000
-- **Backend (NestJS API):** http://localhost:3001
+Default development server:
 
----
-
-## 🔐 Sistem Keamanan (Auth Flow)
-
-Boilerplate ini sudah dilengkapi dengan alur autentikasi siap pakai:
-
-1. **Login** — Frontend mengirim kredensial ke `/auth/login` (NestJS).
-2. **Token** — Backend memvalidasi dan mengembalikan JWT Token.
-3. **Cookies** — Frontend menyimpan token di dalam Cookies.
-4. **Interceptor** — Setiap request Axios berikutnya secara otomatis akan menyisipkan `Authorization: Bearer <token>` di Headers.
-5. **Proxy Guard** — `proxy.ts` di Next.js akan memblokir akses ke halaman `/dashboard/*` jika token tidak ditemukan, lalu melempar user kembali ke halaman login.
-
----
-
-## 🚀 Panduan Deployment
-
-### Deployment Frontend (Next.js)
-
-Frontend sangat dioptimalkan untuk di-deploy ke Vercel.
-
-1. Hubungkan repository ke Vercel.
-2. Atur **Root Directory** ke `apps/web`.
-3. Masukkan `NEXT_PUBLIC_API_URL` di pengaturan Environment Variables Vercel (arahkan ke URL backend produksi).
-
-### Deployment Backend (NestJS / Docker)
-
-Backend siap di-deploy ke VPS (DigitalOcean, AWS, GCP, dll) menggunakan Docker.
-
-1. Masuk ke VPS Anda.
-2. Build image menggunakan Dockerfile yang tersedia di `apps/api/Dockerfile`:
-
-```bash
-docker build -t stackplus-api -f apps/api/Dockerfile .
-```
-
-3. Jalankan container:
-
-```bash
-docker run -d -p 3001:3001 --env-file apps/api/.env stackplus-api
+```text
+Frontend → http://localhost:3000
+Backend  → http://localhost:3001
 ```
 
 ---
 
-Developed with ❤️ by **Stack Plus Studio Core Team**.
+## Authentication
+
+Core Engine menyediakan authentication flow berbasis JWT.
+
+```text
+User
+ ↓
+Next.js
+ ↓
+NestJS API
+ ↓
+Credential Validation
+ ↓
+JWT
+ ↓
+Cookie
+ ↓
+Axios Authorization
+ ↓
+Protected API
+```
+
+Frontend menggunakan `proxy.ts` untuk membantu melindungi route yang membutuhkan authentication, sementara backend tetap melakukan validasi authorization pada endpoint yang dilindungi.
+
+---
+
+## Development Workflow
+
+Workflow utama CayLabs:
+
+```text
+Define Feature
+      ↓
+Update Database
+      ↓
+Update Backend
+      ↓
+Update Frontend
+      ↓
+Test
+      ↓
+Commit
+```
+
+Bagian database dapat dilewati apabila feature tidak membutuhkan perubahan schema.
+
+---
+
+## Deployment
+
+### Frontend
+
+Frontend Next.js dapat di-deploy menggunakan platform seperti **Vercel**.
+
+Root directory:
+
+```text
+apps/web
+```
+
+Environment variable production:
+
+```env
+NEXT_PUBLIC_API_URL="https://your-production-api.com"
+```
+
+### Backend
+
+Backend NestJS tersedia dengan Dockerfile:
+
+```text
+apps/api/Dockerfile
+```
+
+Contoh build:
+
+```bash
+docker build -t caylabs-api -f apps/api/Dockerfile .
+```
+
+Backend dapat dijalankan pada VPS atau container infrastructure lainnya.
+
+---
+
+## Engineering Principles
+
+CayLabs Core Engine dibangun berdasarkan beberapa prinsip:
+
+* **Reusable Foundation**
+* **Monorepo Architecture**
+* **Separation of Concerns**
+* **Centralized Database Layer**
+* **API-based Communication**
+* **Secure Environment Configuration**
+* **Modular Backend**
+* **Reusable UI Components**
+* **Container-ready Backend**
+* **Production-ready Frontend**
+
+---
+
+## Purpose
+
+CayLabs bukan sekadar boilerplate.
+
+Core Engine ini berfungsi sebagai **laboratorium engineering** untuk mengembangkan, menguji, menyempurnakan, dan menggunakan kembali fondasi teknologi dalam berbagai proyek.
+
+```text
+                    CayLabs
+                 Cahyo Laboratory
+                       │
+                       ▼
+                  Core Engine
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+       Frontend     Backend      Database
+       Next.js      NestJS       PostgreSQL
+          │            │            │
+          └────────────┼────────────┘
+                       ▼
+                 New Projects
+```
+
+---
+
+## Credits
+
+Developed by **Budi Cahyono**
+**CayLabs — Cahyo Lab**
