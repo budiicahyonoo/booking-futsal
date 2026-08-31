@@ -61,7 +61,7 @@ git init
 git add .
 git commit -m "chore: initial setup from core system v1.0"
 git remote add origin https://github.com/stackplustudio/lms-project.git
-git push -u origin master
+git push -u origin main
 ```
 
 ### Langkah wajib di kedua opsi: Isolasi identitas Git
@@ -89,6 +89,8 @@ pnpm dev
 Proyek baru kini sudah punya "rumah" sendiri di GitHub dan siap dikembangkan.
 
 ---
+
+> Catatan: Contoh di bawah ini (Course/Module) khusus ilustrasi untuk project LMS. Untuk project lain, sesuaikan nama model & resource dengan PRD masing-masing project.
 
 ## TAHAP 2: Menambahkan Fitur Bisnis (Contoh: LMS)
 
