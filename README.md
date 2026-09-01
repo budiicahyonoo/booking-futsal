@@ -19,7 +19,7 @@ Core Engine ini dibuat untuk menghindari setup proyek berulang. Setiap proyek ba
 
 - **Framework:** Next.js 16 (App Router)
 - **Styling:** Tailwind CSS
-- **UI Components:** Shadcn UI
+- **UI Components:** Shadcn UI (Custom Solid Enterprise Theme with CayLabs Tokens)
 - **State & HTTP:** React Hooks, Axios
 - **Feedback UI:** React Hot Toast
 
