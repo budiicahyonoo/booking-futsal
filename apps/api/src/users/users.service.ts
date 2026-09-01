@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto'; // 🔥 TAMBAHKAN BARIS INI
@@ -26,7 +27,7 @@ export class UsersService {
         email: createUserDto.email,
         name: createUserDto.name,
         password: hashedPassword,
-        role: createUserDto.role || 'USER',
+        role: (createUserDto.role as Role) || Role.USER,
       },
       select: {
         id: true,

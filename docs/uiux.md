@@ -34,96 +34,35 @@ Project ini bukan prototype atau demo, tetapi aplikasi yang siap dikembangkan me
 
 Gunakan pendekatan Mobile First.
 
----
-
 ## 2. DESIGN PHILOSOPHY
 
-Gunakan desain ultra-modern tahun 2026 dengan gaya **Glassmorphism & Rounded**.
-
+Gunakan desain Solid Enterprise UI.
 **Karakter desain:**
-
-- Fluid & Dynamic
-- Glassmorphism (Efek kaca tembus pandang)
-- Rounded (Sudut membulat yang ramah dan organik)
-- Floating Elements (Elemen seolah melayang di atas background)
-- Clean & Premium High-Tech
-
-**Inspirasi visual:**
-
-- macOS Big Sur / Sonoma (Glass UI)
-- Linear (Glow effects)
-- Modern AI Interfaces
-- Vercel (Precision)
-
-Gunakan efek `backdrop-blur` dipadukan dengan latar belakang semi-transparan. Visual hierarchy harus jelas meski menggunakan transparansi.
-
----
+- Professional, Clean, & High-Contrast
+- Solid Colors (TIDAK ADA Glassmorphism / blur)
+- Sharp & Structural (Border-radius tegas, bukan elips)
+- Minimalist Whitespace
 
 ## 3. DESIGN TOKEN
 
-Gunakan design token "Hola Azul" berikut secara konsisten.
+Gunakan 6 Warna CayLabs Core Color System secara konsisten.
+- 01 `#00033D` - Primary Dark (Heading, Dark Text, Icons)
+- 02 `#0033FF` - Primary Action (Buttons, Active states, CTA)
+- 03 `#977DFF` - Accent / Highlight
+- 04 `#EAEDFB` - Soft Neutral (Borders, Dividers, Input Borders, Skeletons)
+- 05 `#030812` - Sidebar / Dark Surface
+- 06 `#FFFFFF` - Page Background / Card Surface
 
-### Color Palette
+### Border Radius (Structured Theme)
+- Gunakan `rounded-lg` (8px) untuk Card, Button, dan Input. JANGAN gunakan full-rounded/pill shape.
 
-- **Primary Color:** `#6495ED` (Cornflower Blue - Soft, ramah, untuk CTA utama)
-- **Secondary Color:** `#000080` (Navy - Tegas, untuk teks tebal, struktur, header)
-- **Accent / Glow:** `#87CEEB` (Sky Blue - Untuk efek glow, hover, indikator aktif)
-- **Background Base:** `#F0F8FF` (Alice Blue - Warna dasar aplikasi)
-
-### Neutral & Glass Colors
-
-- **Glass Light:** `rgba(255, 255, 255, 0.4)` (Untuk Card background)
-- **Glass Border:** `rgba(255, 255, 255, 0.2)`
-- **Teks Utama:** `#000080` atau Gray-900 (Beri kontras maksimal di atas glass)
-- **Teks Sekunder:** Gray-600
-
-### Typography
-
-- **Font:** **Plus Jakarta Sans**
-- **Fallback:** Geist / Inter
-- **Karakter:** Modern, geometris, sangat cocok untuk angka dan data.
-- **Heading:** Bold / ExtraBold (Gunakan warna `#000080`)
-- **Body:** Regular / Medium
-
-### Border Radius (Rounded Theme)
-
-- **Card:** `16px` atau `24px` (Sangat membulat)
-- **Button:** `9999px` (Pill-shaped / Full rounded) atau `12px`
-- **Input:** `12px`
-
-### Shadow (Colored / Glow Shadow)
-
-- JANGAN gunakan shadow hitam/abu-abu pekat.
-- Gunakan shadow kebiruan untuk kesan melayang: `shadow-[0_8px_30px_rgb(100,149,237,0.15)]`
-- Hover state: Perbesar radius shadow dan glow effect.
-
----
-
-## 4. LAYOUT SYSTEM
-
-**Desktop:** Max Width 1280px, 12 Columns Grid.
-
-**Layout Dashboard:**
-
-- **Sidebar:** Floating / Glass Sidebar (Tidak menempel penuh ke ujung layar, beri margin 16px).
-- **Top Navigation:** Sticky Header dengan `backdrop-blur-md` dan `bg-white/50`.
-- **Whitespace:** Ekstra luas. Biarkan elemen bernapas.
-
----
+### Shadow
+- Gunakan shadow ringan (`shadow-sm`) untuk card biasa, dan colored-shadow tipis untuk tombol aksi: `shadow-[0_4px_14px_rgba(0,51,255,0.3)]`.
 
 ## 5. COMPONENT LIBRARY
-
-Gunakan: **shadcn/ui** (Disesuaikan dengan gaya Glassmorphism)
-
-**Icon:** **Lucide** (Gunakan stroke width yang konsisten, misalnya 1.5 atau 2)
-
-**Penyesuaian Wajib shadcn/ui:**
-
-- **Card:** Hapus background solid, ganti dengan `bg-white/40 backdrop-blur-lg border border-white/20`.
-- **Button (Primary):** Background `#6495ED`, text putih, bentuk pill (`rounded-full`), shadow `#6495ED/20`.
-- **Input:** Background putih transparan `bg-white/50`, fokus dengan ring `#87CEEB`.
-
----
+- **Card:** Wajib menggunakan `bg-[#FFFFFF] border border-[#EAEDFB] rounded-lg shadow-sm`.
+- **Button (Primary):** Background `#0033FF`, text putih, `rounded-md`, dengan efek shadow spesifik warna primary.
+- **Input:** Background putih, border `#EAEDFB`, `rounded-lg`, tinggi `h-10`.
 
 ## 6. COMPONENT STATES
 
