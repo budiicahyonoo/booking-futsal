@@ -1,25 +1,20 @@
-import { Controller, Post, Body, UnauthorizedException, Res, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, UnauthorizedException, Res, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
-import type { Response } from 'express';
+import type { Response, Request } from 'express';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() body: any, @Res({ passthrough: true }) res: Response) {
-    // 1. Cek kredensial via Service
-    const user = await this.authService.validateUser(body.email, body.password);
-    
-    if (!user) {
-      throw new UnauthorizedException('Email atau Password salah');
-    }
+  async login(@Body() body: { identifier: string; password: string }, @Res({ passthrough: true }) res: Response) {
+    const user = await this.authService.validateUser(body.identifier, body.password);
+    if (!user) throw new UnauthorizedException('Email/No. HP atau password salah');
 
-    // 2. Jika valid, buat token
     const tokens = await this.authService.login(user);
 
-    // 3. Simpan Refresh Token ke HTTP-Only Cookie (sangat aman)
+    // Refresh token di HTTP-Only cookie (aman, tidak bisa dibaca JS)
     res.cookie('refresh_token', tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -27,7 +22,6 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // 4. Kembalikan Access Token ke frontend untuk disimpan di memory
     return {
       message: 'Login berhasil',
       user: tokens.user,
@@ -35,8 +29,35 @@ export class AuthController {
     };
   }
 
-  // --- GOOGLE OAUTH ROUTES ---
-  
+  @Post('register')
+  register(@Body() body: { name: string; phone: string; email?: string; password: string }) {
+    return this.authService.register(body);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('me')
+  me(@Req() req: any) {
+    return this.authService.getProfile(req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch('me')
+  updateMe(@Req() req: any, @Body() body: { name?: string; phone?: string; email?: string }) {
+    return this.authService.updateProfile(req.user.id, body);
+  }
+
+  @Post('request-reset')
+  requestReset(@Body() body: { identifier: string }) {
+    return this.authService.requestPasswordReset(body.identifier);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() body: { identifier: string; otp: string; newPassword: string }) {
+    return this.authService.resetPassword(body.identifier, body.otp, body.newPassword);
+  }
+
+  // --- GOOGLE OAUTH (dipertahankan dari fondasi CayLabs) ---
+
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth(@Req() req: any) {
@@ -46,23 +67,17 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req: any, @Res() res: Response) {
-    // req.user berisi data profil dari GoogleStrategy
     const tokens = await this.authService.login(req.user);
-
-    // Tanamkan access_token di cookie agar Next.js bisa membacanya
     res.cookie('access_token', tokens.access_token, {
-      httpOnly: false, 
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 1000, 
+      maxAge: 60 * 60 * 1000,
     });
-
     res.cookie('refresh_token', tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-
-    // Tendang kembali ke frontend utama (dashboard)
     res.redirect('http://localhost:3000/choice');
   }
 }

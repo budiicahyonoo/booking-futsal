@@ -8,17 +8,319 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ==================== RBAC ====================
 enum Role {
+  OWNER
   ADMIN
-  USER
+  MEMBER
+  USER // legacy compat
+}
+
+enum MemberType {
+  REGULER // harga khusus member (FR-COURT-05, FR-MEMBER-03)
+  BIASA
+}
+
+// ==================== BOOKING ====================
+enum BookingStatus {
+  HOLD // slot di-hold saat checkout (TTL)
+  PENDING_PAYMENT // menunggu konfirmasi pembayaran manual (FR-BOOK-04)
+  CONFIRMED // terkonfirmasi (QRIS otomatis FR-BOOK-05 / verifikasi admin)
+  CANCELLED
+  COMPLETED // sesi sudah lewat & terkonfirmasi (dihitung okupansi)
+  REJECTED // bukti transfer ditolak admin (flow 7.4)
+}
+
+enum PaymentType {
+  DP
+  LUNAS
+}
+
+enum PaymentMethod {
+  TRANSFER
+  QRIS
+}
+
+enum PaymentStatus {
+  MENUNGGU
+  TERKONFIRMASI
+  DITOLAK
+}
+
+enum DayType {
+  WEEKDAY
+  WEEKEND
+}
+
+enum CourtStatus {
+  AKTIF
+  NONAKTIF // direnovasi, tidak muncul di jadwal publik (FR-COURT-04)
+}
+
+enum NotificationType {
+  KONFIRMASI
+  PENGINGAT // H-1 (FR-NOTIF-02)
+  PEMBATALAN
+  RESCHEDULE
+}
+
+enum NotificationChannel {
+  WA
+  EMAIL
+}
+
+enum NotificationStatus {
+  ANTRIAN
+  TERKIRIM
+  GAGAL
+}
+
+// ==================== MODELS ====================
+
+model Venue {
+  id                String  @id @default(cuid())
+  name              String
+  address           String
+  logoUrl           String?
+  contactWa         String?
+  // Jam operasional (FR-COURT-02), jam desimal WIB: 8 => 08:00, 24 => 24:00
+  openHour          Float   @default(8)
+  closeHour         Float   @default(24)
+  // Durasi slot dalam jam (mis. 1 = per jam), dikonfigurasi owner (FR-COURT-02)
+  slotDurationHours Float   @default(1)
+
+  // Pengaturan hold & DP (FR-SET-03, FR-SET-05)
+  holdDurationMinutes           Int @default(10)
+  defaultDpPercentage           Int @default(50) // 0 = wajib lunas
+  // Kebijakan pembatalan/reschedule (FR-POLICY-01), jam sebelum jadwal
+  freeRescheduleHours           Int @default(24)
+  cancellationPenaltyPercentage Int @default(100) // % DP hangus bila batal < batas
+
+  bankName        String?
+  bankAccount     String?
+  bankAccountName String?
+  // QRIS V1 (FR-BOOK-03) - gambar QRIS statis milik venue
+  qrisImageUrl    String?
+
+  // Template notifikasi (FR-SET-04)
+  waTemplate    String?
+  emailTemplate String?
+
+  courts    Court[]
+  users     User[]
+  policies  CancellationPolicy[]
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Court {
+  id          String      @id @default(cuid())
+  venueId     String
+  venue       Venue       @relation(fields: [venueId], references: [id])
+  name        String
+  surfaceType String // vinyl / rumput sintetis / interlock
+  photoUrl    String?
+  capacity    Int         @default(10)
+  status      CourtStatus @default(AKTIF)
+
+  pricingRules    PricingRule[]
+  bookings        Booking[]
+  slotHolds       SlotHold[]
+  recurringGroups RecurringGroup[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([venueId])
+}
+
+model PricingRule {
+  id          String  @id @default(cuid())
+  courtId     String
+  court       Court   @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  dayType     DayType
+  startHour   Float // mis. 18 => 18:00
+  endHour     Float
+  price       Int // harga per slot umum (Rupiah)
+  memberPrice Int? // harga member (FR-COURT-05), null = sama dengan umum
+
+  @@index([courtId])
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String?  
-  name      String?
-  role      Role     @default(USER)
+  id              String   @id @default(cuid())
+  venueId         String? // terisi utk Owner/Admin, null utk Member/Guest (venue-aware, bagian 10 PRD)
+  venue           Venue?   @relation(fields: [venueId], references: [id])
+  email           String?  @unique
+  phone           String?  @unique
+  password        String?
+  name            String?
+  role            Role     @default(MEMBER)
+  isRegularMember Boolean  @default(false) // FR-MEMBER-03
+  googleId        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bookings         Booking[]
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  verifiedPayments Payment[]      @relation("VerifiedPayments")
+  memberProfile    Member?
+
+  @@index([venueId])
+}
+
+model Member {
+  id            String     @id @default(cuid())
+  userId        String     @unique
+  user          User       @relation(fields: [userId], references: [id])
+  type          MemberType @default(BIASA)
+  totalBooking  Int        @default(0)
+  totalSpend    Int        @default(0)
+  lastBookingAt DateTime?
+
+  @@index([type])
+}
+
+// 1 baris = 1 sesi booking (diawali SlotHold saat checkout)
+model Booking {
+  id               String          @id @default(cuid())
+  code             String          @unique @default(cuid()) // kode unik utk cek status tanpa login (FR-BOOK-06)
+  courtId          String
+  court            Court           @relation(fields: [courtId], references: [id])
+  userId           String? // null jika guest (FR-AUTH-03)
+  user             User?           @relation(fields: [userId], references: [id])
+  bookerName       String
+  bookerPhone      String
+  date             DateTime        @db.Date
+  startHour        Float
+  endHour          Float
+  status           BookingStatus   @default(HOLD)
+  paymentType      PaymentType     @default(DP)
+  recurringGroupId String?
+  recurringGroup   RecurringGroup? @relation(fields: [recurringGroupId], references: [id])
+  // Harga di-lock saat hold, bukan diambil real-time saat bayar (PRD 12.1)
+  totalPrice       Int
+  dpAmount         Int
+  paidAmount       Int             @default(0)
+  notes            String? // catatan admin / walk-in
+  isWalkIn         Boolean         @default(false)
+
+  payments      Payment[]
+  notifications Notification[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([courtId, date, startHour])
+  @@index([userId])
+  @@index([recurringGroupId])
+  @@index([status])
+  @@index([bookerPhone])
+}
+
+model RecurringGroup {
+  id         String   @id @default(cuid())
+  courtId    String
+  court      Court    @relation(fields: [courtId], references: [id])
+  dayOfWeek  Int // 0=Minggu .. 6=Sabtu
+  startHour  Float
+  endHour    Float
+  startDate  DateTime @db.Date
+  weeksCount Int
+  status     String   @default("ACTIVE")
+
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courtId])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  bookingId       String
+  booking         Booking       @relation(fields: [bookingId], references: [id])
+  method          PaymentMethod
+  type            PaymentType
+  amount          Int
+  proofUrl        String? // bukti transfer (akses terbatas, tidak publik - PRD 8 Security)
+  status          PaymentStatus @default(MENUNGGU)
+  rejectionReason String?
+  verifiedById    String?
+  verifiedBy      User?         @relation("VerifiedPayments", fields: [verifiedById], references: [id])
+  verifiedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([status])
+}
+
+model CancellationPolicy {
+  id                  String  @id @default(cuid())
+  venueId             String
+  venue               Venue   @relation(fields: [venueId], references: [id])
+  name                String
+  freeRescheduleHours Int     @default(24)
+  penaltyPercentage   Int     @default(100) // % DP hangus bila batal < batas waktu
+  isActive            Boolean @default(true)
+
+  @@index([venueId])
+}
+
+// SlotHold sementara (TTL) - mencegah double booking saat checkout (FR-SCHED-03/04)
+model SlotHold {
+  id        String   @id @default(cuid())
+  courtId   String
+  court     Court    @relation(fields: [courtId], references: [id])
+  date      DateTime @db.Date
+  startHour Float
+  endHour   Float
+  sessionId String // id sesi checkout milik pengguna
+
+  expiredAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([courtId, date, startHour])
+  @@index([sessionId])
+  @@index([expiredAt])
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  bookingId String?
+  booking   Booking?            @relation(fields: [bookingId], references: [id])
+  userId    String?
+  user      User?               @relation(fields: [userId], references: [id])
+  type      NotificationType
+  channel   NotificationChannel
+  status    NotificationStatus  @default(ANTRIAN)
+  sentAt    DateTime?
+  content   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([userId])
+}
+
+model AuditLog {
+  id      String  @id @default(cuid())
+  venueId String?
+  venue   Venue?  @relation(fields: [venueId], references: [id])
+  userId  String?
+  user    User?   @relation(fields: [userId], references: [id])
+  action  String
+  detail  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([venueId])
+  @@index([userId])
 }
