@@ -29,9 +29,19 @@ export class AvailabilityService {
    * Slot terisi = Booking aktif (HOLD/PENDING/CONFIRMED/COMPLETED) + SlotHold belum expired.
    * Slot yang sudah lewat di hari ini ditandai LEWAT dan tidak bisa dipilih.
    */
-  async getAvailability(dateStr: string, isMember: boolean) {
+  async getAvailability(dateStr: string, userId?: string | null) {
     const venue = await this.prisma.venue.findFirst();
     if (!venue) throw new NotFoundException('Venue belum dikonfigurasi');
+
+    // Harga khusus hanya utk member reguler (FR-COURT-05)
+    let isMember = false;
+    if (userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { isRegularMember: true },
+      });
+      isMember = !!user?.isRegularMember;
+    }
 
     const date = new Date(`${dateStr}T00:00:00+07:00`);
     const courts = await this.prisma.court.findMany({

@@ -56,33 +56,35 @@ export default function BookingPage() {
 
   function toggleSlot(courtId: string, courtNm: string, slot: SlotCell) {
     if (slot.status !== 'KOSONG') return;
-    setCourtName(courtNm);
-    setSelected((prev) => {
-      const key = `${courtId}-${slot.startHour}`;
-      const next = { ...prev };
-      if (next[key]) {
-        delete next[key];
-      } else {
-        // Hanya slot berurutan di lapangan yang sama
-        const otherCourt = Object.keys(next).find((k) => !k.startsWith(courtId));
-        if (otherCourt) {
-          toast.error('Pilih slot di lapangan yang sama');
-          return prev;
-        }
-        // Slot harus berurutan
-        const hours = Object.keys(next).map((k) => Number(k.split('-')[1]));
-        if (hours.length > 0) {
-          const min = Math.min(...hours);
-          const max = Math.max(...hours);
-          if (slot.startHour !== min - 1 && slot.startHour !== max + 1) {
-            toast.error('Pilih slot yang berurutan');
-            return prev;
-          }
-        }
-        next[key] = slot;
+    const key = `${courtId}-${slot.startHour}`;
+
+    // Sudah dipilih -> hapus (deselect)
+    if (selected[key]) {
+      const next = { ...selected };
+      delete next[key];
+      setSelected(next);
+      return;
+    }
+
+    // Validasi di luar updater setState: side effect (toast) tidak boleh saat render
+    const otherCourt = Object.keys(selected).find((k) => !k.startsWith(courtId));
+    if (otherCourt) {
+      toast.error('Pilih slot di lapangan yang sama');
+      return;
+    }
+
+    const hours = Object.keys(selected).map((k) => Number(k.split('-')[1]));
+    if (hours.length > 0) {
+      const min = Math.min(...hours);
+      const max = Math.max(...hours);
+      if (slot.startHour !== min - 1 && slot.startHour !== max + 1) {
+        toast.error('Pilih slot yang berurutan');
+        return;
       }
-      return next;
-    });
+    }
+
+    setCourtName(courtNm);
+    setSelected({ ...selected, [key]: slot });
   }
 
   async function handleHold() {

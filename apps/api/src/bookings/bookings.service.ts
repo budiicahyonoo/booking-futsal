@@ -161,14 +161,14 @@ export class BookingsService {
     const date = holds[0].date;
     const courtId = holds[0].courtId;
 
-    // 2. Tentukan harga member
+    // 2. Harga khusus hanya utk member reguler (FR-COURT-05)
     let isMember = false;
     if (userId) {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        include: { memberProfile: true },
+        select: { isRegularMember: true },
       });
-      isMember = !!user?.memberProfile;
+      isMember = !!user?.isRegularMember;
     }
 
     // 3. Total harga (di-lock dari hold - PRD 12.1)

@@ -35,9 +35,9 @@ export class RecurringService {
     if (userId) {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        include: { memberProfile: true },
+        select: { isRegularMember: true },
       });
-      isMember = !!user?.memberProfile;
+      isMember = !!user?.isRegularMember;
     }
 
     const startDate = new Date(`${dto.startDate}T00:00:00+07:00`);

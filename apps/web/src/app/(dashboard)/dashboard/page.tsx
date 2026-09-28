@@ -1,69 +1,110 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import toast from 'react-hot-toast';
+import { GlassCard, GlassButton } from '@/components/glass';
+import { api } from '@/lib/api';
+import { formatRupiah, formatTanggalIndo, toDateStringWIB } from '@/lib/format';
+import type { DailySummary } from '@/lib/types';
 
 export default function DashboardPage() {
+  const [summary, setSummary] = useState<DailySummary | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api
+      .get('/reports/daily')
+      .then((res) => setSummary(res.data))
+      .catch((e) => toast.error(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const cards = summary
+    ? [
+        { label: 'Booking Hari Ini', value: String(summary.totalBookings), icon: '📋', sub: `${summary.statusBreakdown.confirmed} terkonfirmasi · ${summary.statusBreakdown.pending} pending` },
+        { label: 'Pendapatan Hari Ini', value: formatRupiah(summary.revenue), icon: '💰', sub: `${summary.bookedHours} jam terjual` },
+        { label: 'Okupansi', value: `${summary.occupancyPercentage}%`, icon: '📈', sub: `${summary.bookedHours}/${summary.operationalHours} jam operasional` },
+        { label: 'Menunggu Verifikasi', value: String(summary.pendingPayments), icon: '⏳', sub: 'Perlu ditindaklanjuti admin' },
+      ]
+    : [];
+
   return (
     <div className="max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6 text-foreground">Dashboard Overview</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-foreground/70">Total Pengguna</CardTitle>
-            <span className="text-primary text-lg">👥</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">1,245</div>
-            <p className="text-xs text-foreground/50 mt-1">+12% dari bulan lalu</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-foreground/70">Sesi Aktif</CardTitle>
-            <span className="text-secondary text-lg">⚡</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">342</div>
-            <p className="text-xs text-foreground/50 mt-1">Saat ini online</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-foreground/70">Pendapatan</CardTitle>
-            <span className="text-green-500 text-lg">💰</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">Rp 4.5M</div>
-            <p className="text-xs text-foreground/50 mt-1">+8% dari bulan lalu</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-foreground/70">Sistem Error</CardTitle>
-            <span className="text-red-500 text-lg">⚠️</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">0</div>
-            <p className="text-xs text-foreground/50 mt-1">Sistem berjalan normal</p>
-          </CardContent>
-        </Card>
-
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#00033D]">Dashboard</h1>
+          <p className="text-sm text-[#00033D]/60">
+            {summary ? formatTanggalIndo(summary.date) : 'Ringkasan harian'}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/dashboard/pending">
+            <GlassButton variant="secondary" size="sm">⏳ Verifikasi Pembayaran</GlassButton>
+          </Link>
+          <Link href="/dashboard/calendar">
+            <GlassButton size="sm">📅 Lihat Kalender</GlassButton>
+          </Link>
+        </div>
       </div>
 
-      <Card className="min-h-[300px]">
-        <CardHeader>
-          <CardTitle>Aktivitas Terbaru</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center h-48 border border-dashed border-border rounded-md bg-muted/30">
-            <p className="text-sm text-foreground/50">Komponen tabel data akan dirender di area ini.</p>
-          </div>
-        </CardContent>
-      </Card>
-      
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <GlassCard key={i} className="p-6 animate-pulse">
+              <div className="h-4 w-24 bg-white/40 rounded mb-3" />
+              <div className="h-8 w-28 bg-white/40 rounded mb-2" />
+              <div className="h-3 w-32 bg-white/30 rounded" />
+            </GlassCard>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {cards.map((c) => (
+            <GlassCard key={c.label} className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-[#00033D]/60">{c.label}</span>
+                <span className="text-lg">{c.icon}</span>
+              </div>
+              <div className="text-2xl font-bold text-[#00033D]">{c.value}</div>
+              <p className="text-xs text-[#00033D]/50 mt-1">{c.sub}</p>
+            </GlassCard>
+          ))}
+        </div>
+      )}
+
+      {/* Aksi cepat */}
+      <h2 className="font-semibold text-[#00033D] mb-3">Aksi Cepat</h2>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link href="/dashboard/pending">
+          <GlassCard className="p-5 hover:bg-white/40 transition-all hover:scale-[1.02] cursor-pointer">
+            <div className="text-2xl mb-2">✅</div>
+            <p className="font-semibold text-sm text-[#00033D]">Konfirmasi Pembayaran</p>
+            <p className="text-xs text-[#00033D]/50">Verifikasi bukti transfer manual</p>
+          </GlassCard>
+        </Link>
+        <Link href="/dashboard/calendar">
+          <GlassCard className="p-5 hover:bg-white/40 transition-all hover:scale-[1.02] cursor-pointer">
+            <div className="text-2xl mb-2">📝</div>
+            <p className="font-semibold text-sm text-[#00033D]">Booking Walk-in</p>
+            <p className="text-xs text-[#00033D]/50">Catat booking manual pelanggan</p>
+          </GlassCard>
+        </Link>
+        <Link href="/dashboard/reports">
+          <GlassCard className="p-5 hover:bg-white/40 transition-all hover:scale-[1.02] cursor-pointer">
+            <div className="text-2xl mb-2">📈</div>
+            <p className="font-semibold text-sm text-[#00033D]">Laporan Okupansi</p>
+            <p className="text-xs text-[#00033D]/50">Heatmap jam ramai & pendapatan</p>
+          </GlassCard>
+        </Link>
+        <Link href="/dashboard/settings">
+          <GlassCard className="p-5 hover:bg-white/40 transition-all hover:scale-[1.02] cursor-pointer">
+            <div className="text-2xl mb-2">⚙️</div>
+            <p className="font-semibold text-sm text-[#00033D]">Pengaturan Venue</p>
+            <p className="text-xs text-[#00033D]/50">Jam operasional, DP, kebijakan</p>
+          </GlassCard>
+        </Link>
+      </div>
     </div>
   );
 }
